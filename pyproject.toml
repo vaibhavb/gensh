@@ -7,11 +7,16 @@ write_to = "gensh/_version.py"
 
 [tool.poetry]
 name = "gensh"
-version = "0.1.0"
+version = "0.1.2"
 description = "GenSh - Generate and execute code using natural language"
 authors = ["Vaibhav Bhandari <vaibhavb@gmail.com>"]
 license = "MIT"
 readme = "README.md"
+include = [
+  "templates/*",
+  "README.md"
+]
+
 
 [tool.poetry.dependencies]
 python = "^3.11"

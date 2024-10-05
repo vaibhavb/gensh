@@ -19,6 +19,7 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 import sys
+import importlib.resources
 
 from .pipe_commands import PipeCommand, GenerateCodeCommand, ExecPythonCommand, ExecShellCommand, SearchWebCommand
 
@@ -261,6 +262,12 @@ class GenShell(cmd.Cmd):
     def load_templates(self) -> Dict[str, str]:
         template_dir = self.config.get('template_dir', 'templates')
         templates = {}
+        with importlib.resources.files('gensh.templates') as sys_templates_dir:
+        # Iterate through all files in the templates directory
+        for template_file in sys_templates_dir.iterdir():
+            if template_file.is_file() and template_file.suffix == '.yml':
+                with importlib.resources.open_text('gensh.templates', template_file.name) as file:
+                    templates[template_file.stem] = yaml.safe_load(file)
         if os.path.exists(template_dir):
             for filename in os.listdir(template_dir):
                 if filename.endswith('.yaml') or filename.endswith('.yml'):
