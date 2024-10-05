@@ -19,8 +19,17 @@ GenSh is a command-line tool that allows you to generate and execute code using 
 - API token management using .env file
 - Multiple output formats: text, Markdown, and Word document (docx)
 
-## Requirements
+## TODO
+- Ask for changes:
+    - Add new features or test cases.
+    - Describe a bug.
+    - Paste in an error message or or GitHub issue URL.
+    - Refactor code.
+    - Update docs.
+- Will edit your files to complete your request.
+- Automatically git commits changes with a sensible commit messag    
 
+## Requirements
 GenSh requires the following:
 
 - Python 3.7 or higher
