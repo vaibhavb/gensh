@@ -7,7 +7,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "openai>=1.0.0",
-        "anthropic>=0.3.0",
+        "anthropic>=0.35.0",
         "PyYAML>=6.0",
         "ollama>=0.1.0",
         "python-dotenv>=0.19.0",
