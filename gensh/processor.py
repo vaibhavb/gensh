@@ -19,9 +19,8 @@ import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 import sys
+import io
 import importlib.resources
-from .pipe_commands import PipeCommand, GenerateCodeCommand, ExecPythonCommand, \
-        ExecShellCommand, SearchWebCommand, AddFileToContextCommand, ShowContextCommand
 
 def load_api_tokens():
     load_dotenv()
@@ -47,19 +46,12 @@ class GenShell(cmd.Cmd):
         self.openai_client = openai.OpenAI(api_key=self.api_tokens['OPENAI_API_KEY'])
         self.anthropic_client = Anthropic(api_key=self.api_tokens['ANTHROPIC_API_KEY'])
         self.last_output = None
+        self.context = None
         self.session_id = str(uuid.uuid4())
         self.db_conn = self.init_database()
-        self.pipe_commands = {}
-        self.register_pipe_command('generate', GenerateCodeCommand())
-        self.register_pipe_command('exec_python', ExecPythonCommand())
-        self.register_pipe_command('exec_shell', ExecShellCommand())
-        self.register_pipe_command('search_web', SearchWebCommand())
-        self.register_pipe_command('add_file', AddFileToContextCommand())
-        self.register_pipe_command('show_context', ShowContextCommand())
         self.templates = self.load_templates()
         self.history = []
         self.intro = f"Welcome to GenSh {self.version}. Type help or ? to list commands.\n"
-
 
     def init_database(self):
         db_path = self.config.get('db_path', 'gensh_logs.db')
@@ -86,7 +78,28 @@ class GenShell(cmd.Cmd):
         ''', (self.session_id, model, query, response))
         self.db_conn.commit()
 
-    def do_show_model_call(self, query):
+
+    def do_show_model_response(self, query: str) -> str :
+        "Show the last [num] model responses, default is 1, saves to context"
+        num = 1
+        if query != "":
+            num = int(query)
+        cursor = self.db_conn.cursor()
+        cursor.execute('SELECT response FROM model_calls ORDER BY id DESC LIMIT ?', (num,))
+        rows = cursor.fetchall()
+        if rows:
+            ctx = "" 
+            column_names = [description[0] for description in cursor.description]
+            for row in rows:
+                for col_name, value in zip(column_names, row):
+                    ctx += value
+                    print(f"{value}")
+                print("-" * 40)  # Divider between rows for clarity
+            self.context = ctx
+        else:
+            print("No records found.")
+ 
+    def do_show_model_call(self, query: str) -> str:
         "Show the last [num] model calls, default is 1"
         num = 1
         if query != "":
@@ -95,8 +108,7 @@ class GenShell(cmd.Cmd):
         cursor.execute('SELECT * FROM model_calls ORDER BY id DESC LIMIT ?', (num,))
         rows = cursor.fetchall()
         if rows:
-            column_names = [description[0] for description in cursor.description]
-            
+            column_names = [description[0] for description in cursor.description]            
             for row in rows:
                 for col_name, value in zip(column_names, row):
                     print(f"{col_name}: {value}")
@@ -104,7 +116,38 @@ class GenShell(cmd.Cmd):
         else:
             print("No records found.")
 
-    def generate_code(self, query: str, execution_type: str) -> str:
+    def do_context_parse(self, query):
+        """Parse a file, extract py, sh, md or js code between triple backticks, and save them as appropriate file types. Saves to context."""
+        file_content = self.context
+        if (file_content == None or ""): return "No content to parse"
+        # Regular expression to find code blocks in python, js, or markdown within triple backticks
+        # TODO: FIX fencetag should not be hardcoded!
+        code_blocks = re.findall(r'```(python|js|sh|md)\n(.*?)```', file_content, re.DOTALL)
+        if code_blocks:
+            code_file = ""
+            for i, (language, code) in enumerate(code_blocks):
+                # Set filetype based on the captured language
+                filetype = {
+                    'python': 'py',
+                    'js': 'js',
+                    'md': 'md',
+                    'sh': 'sh'
+                }.get(language, None)
+
+                if filetype:
+                    # Define the filename where each code block will be saved
+                    filename = f"extracted_code_{i+1}.{filetype}"
+                    code_file += (code.strip() + '\n')
+                    print(f"Code block {i+1} ({language}) saved in {filename}:\n{code_file}")
+                else:
+                    print(f"Unrecognized language: {language}")
+            #TODO: Fix this when there are multiple code blocks in model output
+            self.context = code_file
+        else:
+            print("No code blocks found.")
+
+    def do_generate_code(self, query: str, execution_type: str = 'python') -> str:
+        "Generate code. If query starts as 'use template architect' then it will use 'architect' template, else default to python code generator."
         template_match = re.match(r'use template (\w+)(.*)', query, re.IGNORECASE)
         if template_match:
             template_name = template_match.group(1)
@@ -163,8 +206,6 @@ class GenShell(cmd.Cmd):
                 print(f"```{execution_type}")
                 print(code)
                 print("```")
-                return code
-
             except Exception as e:
                 if self.verbose:
                     print(f"Error generating code: {e}")
@@ -174,7 +215,6 @@ class GenShell(cmd.Cmd):
                     time.sleep(retry_delay)
                 else:
                     print(f"Failed to generate code after {max_retries} attempts.")
-                    return None
 
     def strip_markdown_code_block(self, code: str) -> str:
         code = re.sub(r'^```[\w]*\n', '', code)
@@ -228,13 +268,14 @@ class GenShell(cmd.Cmd):
             if self.verbose:
                 print(f"Executing shell code with timeout of {timeout} seconds...")
             result = subprocess.run([script_file], capture_output=True, text=True, timeout=timeout)
-            return result.stdout + result.stderr
+            print(result.stdout + result.stderr)
         except subprocess.TimeoutExpired:
-            return f"Execution timed out after {timeout} seconds."
+            print(f"Execution timed out after {timeout} seconds.")
         except Exception as e:
-            return f"An error occurred during execution: {e}"
+            print(f"An error occurred during execution: {e}")
 
-    def search_web(self, query: str, num_results: int = 3) -> List[Dict[str, str]]:
+    def do_search_web(self, query: str, num_results: int = 3) -> List[Dict[str, str]]:
+        "Search the web for the query. Possible to get json output as well."
         url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
         response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -244,31 +285,79 @@ class GenShell(cmd.Cmd):
             snippet = result.find('a', class_='result__snippet').text
             link = result.find('a', class_='result__a')['href']
             results.append({"title": title, "snippet": snippet, "link": link})
-        return results
+        print(results)
+
+    def do_add_file(self, input_data: str):
+        "Add the [file] to current context"
+        if os.path.isfile(input_data):
+            with open(input_data, 'r') as f:
+                file_content = f.read()
+        else:
+            print("Not a valid file_path")
+        if 'context' not in self.__dict__:
+            self.context = ""
+        self.context += f"\n{self.fence}\nFILE_NAME:{input_data}\n{file_content}\n{self.fence}"
+        print(f"File '{input_data}' added to context.")
+
+    def do_get_context(self, input_data: str):
+        "Get information in current context"
+        ctx = getattr(self, 'context', "No context available.")
+        print(ctx)
+
+    def do_exec_python(self, input_data: str):
+        "Execute python code in context or in stdin."
+        if os.path.isfile(input_data):
+            with open(input_data, 'r') as f:
+                code = f.read()
+        else:
+            code = input_data
+        if self.confirm_execution():
+            return self.execute_code(code, "python")
+        print("Code execution cancelled.")
+
+    def do_exec_shell(self, input_data: str):
+        "Execute shell code in context or in stdin"
+        if os.path.isfile(input_data):
+            with open(input_data, 'r') as f:
+                code = f.read()
+        else:
+            code = input_data
+        if self.confirm_execution():
+            return self.execute_code(code, "shell")
+        print("Code execution cancelled.")
 
     def process_command(self, line):
-        commands = line.split("|")
-        result = None
+        """Handle pipes and execute the commands in sequence."""
+        # Split commands based on the pipe (|)
+        commands = [cmd.strip() for cmd in line.split('|')]
+        # Input/output for piping
+        input_data = None
+
         for command in commands:
-            command = command.strip()
-            if command.startswith('"') and command.endswith('"'):
-                query = command[1:-1]
-                if result:
-                    query = query.replace("$result", result)
-                result = self.pipe_commands['generate'].execute(query, self)
-            else:
-                cmd_parts = command.split(maxsplit=1)
-                cmd_name = cmd_parts[0]
-                cmd_args = cmd_parts[1] if len(cmd_parts) > 1 else ""
-                if cmd_name in self.pipe_commands:
-                    result = self.pipe_commands[cmd_name].execute(cmd_args or result, self)
-                else:
-                    print(f"Unknown command: {command}")
-                    return
-        if result:
-            print(result)
-        self.last_output = result
-        self.history.append((line, result))
+            # Split the command and its arguments
+            cmd_name, *cmd_args = command.split()
+            cmd_args = ' '.join(cmd_args)  # Convert list back to string
+            # If there is previous output (from a pipe), pass it as input
+            if input_data:
+                # Replace standard input with previous command's output
+                cmd_args = input_data
+            # Redirect standard output to a string buffer to capture output
+            output_buffer = io.StringIO()
+            old_stdout = self.stdout
+            self.stdout = output_buffer
+            # Execute the command
+            stop = super().onecmd(f"{cmd_name} {cmd_args}")
+            # Restore original stdout
+            self.stdout = old_stdout
+            # Capture the output for piping to the next command
+            input_data = output_buffer.getvalue().strip()
+            output_buffer.close()
+            if stop:
+                return stop
+        # Print the final output after all piped commands are executed
+        if input_data:
+            print(input_data)
+        self.history.append((line, input_data))
 
     def default(self, line):
         self.process_command(line)
@@ -278,9 +367,6 @@ class GenShell(cmd.Cmd):
         print("Exiting GenSh. Goodbye!")
         self.db_conn.close()
         return True
-
-    def register_pipe_command(self, name: str, command: PipeCommand):
-        self.pipe_commands[name] = command
 
     def load_templates(self) -> Dict[str, str]:
         template_dir = self.config.get('template_dir', 'templates')
@@ -318,19 +404,6 @@ class GenShell(cmd.Cmd):
             print(f"{i}. Command: {cmd}")
             print(f"   Result: {result[:50]}..." if len(result) > 50 else f"   Result: {result}")
             print()
-
-    def do_help_pipe(self, arg):
-        """Show help for pipe commands."""
-        if arg:
-            if arg in self.pipe_commands:
-                print(f"Help for {arg}:")
-                print(self.pipe_commands[arg].help())
-            else:
-                print(f"Unknown pipe command: {arg}")
-        else:
-            print("Available pipe commands:")
-            for cmd_name, cmd in self.pipe_commands.items():
-                print(f"- {cmd_name}: {cmd.help()}")
 
     def do_set_model(self, arg):
         """Set the AI model to use (e.g., gpt-3.5-turbo, claude, or an Ollama model name)."""

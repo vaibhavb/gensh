@@ -2,20 +2,18 @@
 GenSh is a command-line tool that allows you to generate and execute code using natural language prompts. It leverages large language models to translate your queries into Python or shell code and then executes the generated code.
 
 ## Features
-- Generate and execute Python or shell code from natural language queries
-- Support for multiple LLM backends: OpenAI GPT, Anthropic Claude, and Ollama
-- Web search integration to improve code generation
-- Interactive shell mode
-- Command-line execution mode
-- Batch processing of commands from a file
-- Configurable settings via JSON configuration file
-- Verbose mode for detailed output
-- Error handling and retry logic for code generation
-- Pre-defined templates for common tasks
-- Logging of language model calls to SQLite database
-- Session-based conversation history
-- API token management using .env file
-- Multiple output formats: text, Markdown, and Word document (docx)
+[x] Generate and execute Python or shell code from natural language queries
+[x] Support for multiple LLM backends: OpenAI GPT, Anthropic Claude, and Ollama
+[x] Web search integration to improve code generation
+[x] Interactive shell mode
+[x] Command-line execution mode
+[x] Configurable settings via JSON configuration file
+[x] Verbose mode for detailed output
+[x] Error handling and retry logic for code generation
+[x] Pre-defined templates for common tasks
+[x] Logging of language model calls to SQLite database
+[x] Session-based conversation history
+[x] API token management using .env file
 
 ## TODO
 - Ask for changes:
@@ -130,6 +128,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
-## BUGS
--Release base templates with the shell, list_templates is broken.
-[] history functionality doesnt work
+## BUGS / FEATURES / TODO
+[x] Bug: Release base templates with the shell, list_templates is broken. DONE: added resources
+[x] Bug: History functionality doesnt work - DONE: added show_model commands
+[ ] Feat: Ability to inject on variables in templates, ask for template input
+[ ] Feat: Add test cases for functionality like generate | parse_context | exec_code
+[ ] Feat: Add an eval suite which is based on exercism.org code templates
+[ ] Feat: Add voice capability
+[ ] Feat: Multiple output formats: text, Markdown, and Word document (docx)
+[ ] Feat: Batch processing of commands from a file
