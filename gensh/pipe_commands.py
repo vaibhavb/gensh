@@ -17,6 +17,28 @@ class GenerateCodeCommand(PipeCommand):
     def help(self) -> str:
         return "Generate code based on the given input."
 
+class AddFileToContextCommand(PipeCommand):
+    def execute(self, input_data: str, shell: 'GenShell') -> str:
+        if os.path.isfile(input_data):
+            with open(input_data, 'r') as f:
+                file_content = f.read()
+        else:
+            return "Not a valid file_path"
+        if 'context' not in shell.__dict__:
+            shell.context = ""
+        shell.context += f"\n{shell.fence}\nFILE_NAME:{input_data}\n{file_content}\n{shell.fence}"
+        return f"File '{input_data}' added to context."
+
+    def help(self) -> str:
+        return "Add a file to the current context."
+
+class ShowContextCommand(PipeCommand):
+    def execute(self, input_data: str, shell: 'GenShell') -> str:
+        return getattr(shell, 'context', "No context available.")
+
+    def help(self) -> str:
+        return "Show the current context."
+
 class ExecPythonCommand(PipeCommand):
     def execute(self, input_data: str, shell: 'GenShell') -> str:
         if os.path.isfile(input_data):

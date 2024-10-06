@@ -20,8 +20,8 @@ from bs4 import BeautifulSoup
 import urllib.parse
 import sys
 import importlib.resources
-
-from .pipe_commands import PipeCommand, GenerateCodeCommand, ExecPythonCommand, ExecShellCommand, SearchWebCommand
+from .pipe_commands import PipeCommand, GenerateCodeCommand, ExecPythonCommand, \
+        ExecShellCommand, SearchWebCommand, AddFileToContextCommand, ShowContextCommand
 
 def load_api_tokens():
     load_dotenv()
@@ -35,11 +35,12 @@ def load_api_tokens():
     return tokens
 
 class GenShell(cmd.Cmd):
-    intro = "Welcome to GenSh. Type help or ? to list commands.\n"
     prompt = "gensh> "
+    fence = "---"
 
-    def __init__(self, config: Dict[str, Any], verbose: bool = False):
+    def __init__(self, version: str, config: Dict[str, Any], verbose: bool = False):
         super().__init__()
+        self.version = version
         self.config = config
         self.verbose = verbose
         self.api_tokens = load_api_tokens()
@@ -53,8 +54,12 @@ class GenShell(cmd.Cmd):
         self.register_pipe_command('exec_python', ExecPythonCommand())
         self.register_pipe_command('exec_shell', ExecShellCommand())
         self.register_pipe_command('search_web', SearchWebCommand())
+        self.register_pipe_command('add_file', AddFileToContextCommand())
+        self.register_pipe_command('show_context', ShowContextCommand())
         self.templates = self.load_templates()
         self.history = []
+        self.intro = f"Welcome to GenSh {self.version}. Type help or ? to list commands.\n"
+
 
     def init_database(self):
         db_path = self.config.get('db_path', 'gensh_logs.db')
@@ -80,6 +85,24 @@ class GenShell(cmd.Cmd):
             VALUES (datetime('now'), ?, ?, ?, ?)
         ''', (self.session_id, model, query, response))
         self.db_conn.commit()
+
+    def do_show_model_call(self, query):
+        "Show the last [num] model calls, default is 1"
+        num = 1
+        if query != "":
+            num = int(query)
+        cursor = self.db_conn.cursor()
+        cursor.execute('SELECT * FROM model_calls ORDER BY id DESC LIMIT ?', (num,))
+        rows = cursor.fetchall()
+        if rows:
+            column_names = [description[0] for description in cursor.description]
+            
+            for row in rows:
+                for col_name, value in zip(column_names, row):
+                    print(f"{col_name}: {value}")
+                print("-" * 40)  # Divider between rows for clarity
+        else:
+            print("No records found.")
 
     def generate_code(self, query: str, execution_type: str) -> str:
         template_match = re.match(r'use template (\w+)(.*)', query, re.IGNORECASE)
@@ -262,19 +285,19 @@ class GenShell(cmd.Cmd):
     def load_templates(self) -> Dict[str, str]:
         template_dir = self.config.get('template_dir', 'templates')
         templates = {}
-        with importlib.resources.files('gensh.templates') as sys_templates_dir:
-        # Iterate through all files in the templates directory
-        for template_file in sys_templates_dir.iterdir():
-            if template_file.is_file() and template_file.suffix == '.yml':
-                with importlib.resources.open_text('gensh.templates', template_file.name) as file:
-                    templates[template_file.stem] = yaml.safe_load(file)
-        if os.path.exists(template_dir):
-            for filename in os.listdir(template_dir):
-                if filename.endswith('.yaml') or filename.endswith('.yml'):
-                    template_name = os.path.splitext(filename)[0]
-                    with open(os.path.join(template_dir, filename), 'r') as f:
-                        templates[template_name] = yaml.safe_load(f)
-        return templates
+        with importlib.resources.files('templates') as sys_templates_dir:
+            # Iterate through all files in the templates directory
+            for template_file in sys_templates_dir.iterdir():
+                if template_file.is_file() and template_file.suffix == '.yml':
+                    with importlib.resources.open_text('templates', template_file.name) as file:
+                        templates[template_file.stem] = yaml.safe_load(file)
+            if os.path.exists(template_dir):
+                for filename in os.listdir(template_dir):
+                    if filename.endswith('.yaml') or filename.endswith('.yml'):
+                        template_name = os.path.splitext(filename)[0]
+                        with open(os.path.join(template_dir, filename), 'r') as f:
+                            templates[template_name] = yaml.safe_load(f)
+            return templates
 
     def do_list_templates(self, arg):
         """List all available templates."""
@@ -339,14 +362,15 @@ def load_config(config_file: str) -> Dict[str, Any]:
 
 def main():
     import argparse
+    ver = f"{__import__("gensh").__version__}"
     parser = argparse.ArgumentParser(description="GenSh - Generate and execute code using natural language")
     parser.add_argument('--config', default='~/.gensh_config.json', help='Path to configuration file')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode')
-    parser.add_argument('--version', action='version', version=f'%(prog)s {__import__("gensh").__version__}')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {ver}')
     args = parser.parse_args()
 
     config = load_config(os.path.expanduser(args.config))
-    shell = GenShell(config, verbose=args.verbose)
+    shell = GenShell(ver, config, verbose=args.verbose)
     shell.cmdloop()
 
 if __name__ == "__main__":
