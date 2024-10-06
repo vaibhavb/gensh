@@ -1,5 +1,6 @@
 # GenSh - Generate and Execute Shell
-GenSh is a command-line tool that allows you to generate and execute code using natural language prompts. It leverages large language models to translate your queries into Python or shell code and then executes the generated code.
+GenSh is a command-line tool that allows you to generate and execute code using natural language prompts. It leverages large language models to translate your queries into Python or shell code and then executes the generated code. The intenation of this tool is to assist in software and security research.
+
 
 ## Features
 [x] Generate and execute Python or shell code from natural language queries
@@ -15,20 +16,10 @@ GenSh is a command-line tool that allows you to generate and execute code using 
 [x] Session-based conversation history
 [x] API token management using .env file
 
-## TODO
-- Ask for changes:
-    - Add new features or test cases.
-    - Describe a bug.
-    - Paste in an error message or or GitHub issue URL.
-    - Refactor code.
-    - Update docs.
-- Will edit your files to complete your request.
-- Automatically git commits changes with a sensible commit messag    
-
 ## Requirements
 GenSh requires the following:
 
-- Python 3.7 or higher
+- Python 3.11 or higher
 - OpenAI API key (for GPT-3.5 or GPT-4 access)
 - Anthropic API key (for Claude access)
 - Ollama installed locally (for running local models)
@@ -39,7 +30,6 @@ GenSh requires the following:
   - ollama>=0.1.0
   - python-dotenv>=0.19.0
   - markdown>=3.3.0
-  - python-docx>=0.8.10
   - requests>=2.25.0
   - beautifulsoup4>=4.9.3
 
@@ -74,20 +64,19 @@ gensh
 ### Command-Line Execution
 To run a single command:
 ```
-gensh -c '"find your ip address" | python'
+gensh -c '"find your ip address" | exec_python'
 ```
 
 ### Batch Processing
 To process commands from a file:
 ```
-gensh -f example_batch.txt
+gensh -f example_batch.gensh
 ```
 
 ### Output Formats
 Specify the output format:
 ```
 gensh --output markdown
-gensh --output docx
 ```
 
 ### Verbose Mode
@@ -137,3 +126,8 @@ This project is licensed under the MIT License. See the LICENSE file for details
 [ ] Feat: Add voice capability
 [ ] Feat: Multiple output formats: text, Markdown, and Word document (docx)
 [ ] Feat: Batch processing of commands from a file
+[ ] Feat: Refactor code
+[ ] Feat: Update docs
+[ ] Feat: Ability to edit files in the whole_format
+[ ] Feat: Generate sensible message for git commit changes
+

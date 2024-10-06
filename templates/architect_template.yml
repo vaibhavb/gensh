@@ -11,4 +11,6 @@ system_prompt: >
   Always reply in the same language as the change request.
 
 user_prompt: >
-  
+
+output:
+  format: text
