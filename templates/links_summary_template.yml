@@ -8,7 +8,7 @@ user_prompt: >
   2. Organize the links by tags and then within the tag organize by date (prefarably by week).  Try not to repeat the links.
   3. Succintly DESCRIBE the link in one or two sentences, next to its entry
   4. Introduce the post with a humorous summary
-5. Don't use "|" character in link titles, replace it with "-":working_dir: :cpu_quota: value
+  5. Don't use "|" character in link titles, replace it with "-":working_dir: :cpu_quota: value 
   6. Don't include tags in link name
   7. Make SURE you INCLUDE all the links give to you
   8. Use level tags, ORGANIZE by tags and not weeks
