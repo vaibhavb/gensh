@@ -36,11 +36,22 @@ def load_api_tokens():
 class GenShell(cmd.Cmd):
     prompt = "gensh> "
     fence = "---"
+    defaultConfig = {
+        "template_dir": "templates",
+        "model": "gpt-3.5-turbo",
+        "execution_timeout": 30,
+        "max_retries": 3,
+        "retry_delay": 1,
+        "db_path": "gensh_logs.db",
+        "output_format": "text"
+    }
 
     def __init__(self, version: str, config: Dict[str, Any], verbose: bool = False):
         super().__init__()
         self.version = version
         self.config = config
+        if not self.config:
+            self.config = self.defaultConfig
         self.verbose = verbose
         self.api_tokens = load_api_tokens()
         self.openai_client = openai.OpenAI(api_key=self.api_tokens['OPENAI_API_KEY'])
