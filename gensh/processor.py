@@ -56,7 +56,6 @@ class GenShell(cmd.Cmd):
         self.api_tokens = load_api_tokens()
         self.openai_client = openai.OpenAI(api_key=self.api_tokens['OPENAI_API_KEY'])
         self.anthropic_client = Anthropic(api_key=self.api_tokens['ANTHROPIC_API_KEY'])
-        self.last_output = None
         self.context = None
         self.session_id = str(uuid.uuid4())
         self.db_conn = self.init_database()
@@ -263,7 +262,6 @@ class GenShell(cmd.Cmd):
                 output = self.execute_python(tmpdir, code)
             elif execution_type == "shell":
                 output = self.execute_shell(tmpdir, code)
-            self.last_output = output
             return output
 
     def execute_python(self, tmpdir: str, code: str):
@@ -313,6 +311,18 @@ class GenShell(cmd.Cmd):
             results.append({"title": title, "snippet": snippet, "link": link})
         print(results)
 
+    def do_shell(self, command: str):
+        """Execute a shell command."""
+        if not command:
+            print("No command provided.")
+            return
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            output = result.stdout + result.stderr
+            print(output)
+        except Exception as e:
+            print(f"An error occurred while executing the shell command: {e}")
+    
     def do_add_file(self, input_data: str):
         "Add the [file] to current context"
         if os.path.isfile(input_data):
@@ -322,8 +332,14 @@ class GenShell(cmd.Cmd):
             print("Not a valid file_path")
         if not self.context:
             self.context = {}
-        self.context['file'] = f"\n{self.fence}\nFILE_NAME:{input_data}\n{file_content}\n{self.fence}"
+        self.context['file'] += f"\n{self.fence}\nFILE_NAME:{input_data}\n{file_content}\n{self.fence}"
         print(f"File '{input_data}' added to context.")
+
+    def do_save_context(self, input_data: str):
+        "Save the input to context"
+        if not self.context:
+            self.context = ""
+        self.context = input_data
 
     def do_get_context(self, input_data: str):
         "Get information in current context"
@@ -352,7 +368,7 @@ class GenShell(cmd.Cmd):
             return self.execute_code(code, "shell")
         print("Code execution cancelled.")
 
-    def process_command(self, line):
+    def onecmd(self, line):
         """Handle pipes and execute the commands in sequence."""
         # Split commands based on the pipe (|)
         commands = [cmd.strip() for cmd in line.split('|')]
@@ -364,17 +380,19 @@ class GenShell(cmd.Cmd):
             cmd_name, *cmd_args = command.split()
             cmd_args = ' '.join(cmd_args)  # Convert list back to string
             # If there is previous output (from a pipe), pass it as input
-            if input_data:
+            if input_data is not None:
                 # Replace standard input with previous command's output
-                cmd_args = input_data
+                cmd_args = cmd_args + input_data
             # Redirect standard output to a string buffer to capture output
             output_buffer = io.StringIO()
-            old_stdout = self.stdout
-            self.stdout = output_buffer
+            old_stdout = sys.stdout
+            sys.stdout = output_buffer
             # Execute the command
-            stop = super().onecmd(f"{cmd_name} {cmd_args}")
-            # Restore original stdout
-            self.stdout = old_stdout
+            try:
+                stop = super().onecmd(f"{cmd_name} {cmd_args}") 
+            finally:
+                # Restore original stdout
+                sys.stdout = old_stdout
             # Capture the output for piping to the next command
             input_data = output_buffer.getvalue().strip()
             output_buffer.close()
@@ -384,9 +402,6 @@ class GenShell(cmd.Cmd):
         if input_data:
             print(input_data)
         self.history.append((line, input_data))
-
-    def default(self, line):
-        self.process_command(line)
 
     def do_exit(self, arg):
         """Exit the program."""
