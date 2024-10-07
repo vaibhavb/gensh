@@ -117,10 +117,15 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
+## Inspirations
+- [Aider](https://aider.chat/)
+- [Fabric](https://github.com/danielmiessler/fabric)
+- [Security Prompts](https://learning.oreilly.com/library/view/chatgpt-for-cybersecurity/9781805124047/B21091_03.xhtml)
+
 ## BUGS / FEATURES / TODO
 [x] Bug: Release base templates with the shell, list_templates is broken. DONE: added resources
 [x] Bug: History functionality doesnt work - DONE: added show_model commands
-[ ] Feat: Ability to inject on variables in templates, ask for template input
+[x] Feat: Ability to inject on variables in templates, ask for template input
 [ ] Feat: Add test cases for functionality like generate | parse_context | exec_code
 [ ] Feat: Add an eval suite which is based on exercism.org code templates
 [ ] Feat: Add voice capability

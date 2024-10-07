@@ -7,7 +7,7 @@ write_to = "gensh/_version.py"
 
 [tool.poetry]
 name = "gensh"
-version = "0.1.7"
+version = "0.8.0"
 description = "GenSh - Generate and execute code using natural language"
 authors = ["Vaibhav Bhandari <vaibhavb@gmail.com>"]
 license = "MIT"

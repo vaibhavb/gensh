@@ -157,6 +157,19 @@ class GenShell(cmd.Cmd):
         else:
             print("No code blocks found.")
 
+    def replace_context_variables_in_query(self, query: str):
+        # Find all placeholders in the form of $key using regex
+        placeholders = re.findall(r'\$(\w+)', query) 
+        # Replace each placeholder with its corresponding value in self.context
+        for placeholder in placeholders:
+            if placeholder in self.context:
+                # Replace the $placeholder with the value from self.context
+                query = query.replace(f"${placeholder}", str(self.context[placeholder]))
+            else:
+                print(f"Warning: '{placeholder}' not found in context.")
+        
+        return query
+
     def do_generate_code(self, query: str, execution_type: str = 'python') -> str:
         "Generate code. If query starts as 'use template architect' then it will use 'architect' template, else default to python code generator."
         template_match = re.match(r'use template (\w+)(.*)', query, re.IGNORECASE)
@@ -166,6 +179,7 @@ class GenShell(cmd.Cmd):
             if template_name in self.templates:
                 template = self.templates[template_name]
                 prompt = template['prompt']
+                #TODO: Don't ask user for the variables if they are already in context.
                 for var, desc in template['variables'].items():
                     value = input(f"Enter {desc}: ")
                     prompt = prompt.replace(f"{{{var}}}", value)
@@ -175,6 +189,7 @@ class GenShell(cmd.Cmd):
                 print(f"Template '{template_name}' not found.")
                 return None
         else:
+            query = self.replace_context_variables_in_query(query)
             system_prompt = f"You are a {execution_type} code generator. Generate concise, efficient code without explanations or markdown formatting."
             user_prompt = f"Generate {execution_type} code to {query}. Provide only the code, no explanations or markdown formatting."
 
@@ -305,9 +320,9 @@ class GenShell(cmd.Cmd):
                 file_content = f.read()
         else:
             print("Not a valid file_path")
-        if 'context' not in self.__dict__:
-            self.context = ""
-        self.context += f"\n{self.fence}\nFILE_NAME:{input_data}\n{file_content}\n{self.fence}"
+        if not self.context:
+            self.context = {}
+        self.context['file'] = f"\n{self.fence}\nFILE_NAME:{input_data}\n{file_content}\n{self.fence}"
         print(f"File '{input_data}' added to context.")
 
     def do_get_context(self, input_data: str):
