@@ -1,0 +1,9 @@
+!# /usr/bin/python
+
+from gensh import gensh
+
+output = gensh
+  .ask_model("")
+  .exec_python()
+
+

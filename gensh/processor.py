@@ -241,6 +241,95 @@ class GenShell(cmd.Cmd):
                 else:
                     print(f"Failed to generate code after {max_retries} attempts.")
 
+    def do_use_template(self, arg):
+        """Use a template by its alias or name. Usage: use-template alias_or_name [additional_args]"""
+        if not arg:
+            print("Usage: use-template alias_or_name [additional_args]")
+            return
+            
+        parts = arg.split(maxsplit=1)
+        alias_or_name = parts[0]
+        additional_args = parts[1] if len(parts) > 1 else ""
+        
+        # First check if it's an alias
+        template_name = None
+        if template_name is None:
+            if alias_or_name in self.templates:
+                template_name = alias_or_name
+            else:
+                print(f"No template or alias found for '{alias_or_name}'")
+                return
+        
+        # Use the template
+        template = self.templates[template_name]
+        prompt = template['system_prompt']
+        
+        # Handle template variables
+        for var, desc in template.get('variables', {}).items():
+            if var in getattr(self, 'context', {}):
+                value = self.context[var]
+            else:
+                value = input(f"Enter {desc}: ")
+            prompt = prompt.replace(f"{{{var}}}", value)
+        
+        # Prepare and execute the model query
+        system_prompt = f"You are a code generator. Use the following template to generate code:\n\n{prompt}"
+        user_prompt = f"Generate code based on the template. {additional_args}"
+        
+        model = self.config.get('model', 'gpt-3.5-turbo')
+        max_retries = self.config.get('max_retries', 3)
+        retry_delay = self.config.get('retry_delay', 1)
+        #print(system_prompt, user_prompt)
+        self._do_model_call(model, max_retries, retry_delay, system_prompt, user_prompt, template_name)
+
+    def _do_model_call(self, model, max_retries, retry_delay, system_prompt,user_prompt, template_name):
+        for attempt in range(max_retries):
+            try:
+                if self.verbose:
+                    print(f"Generating code using {model} (attempt {attempt + 1}/{max_retries})...")
+
+                if model.startswith('gpt'):
+                    response = self.openai_client.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ]
+                    )
+                    code = response.choices[0].message.content.strip()
+                elif model == 'claude':
+                    response = self.anthropic_client.messages.create(
+                        model="claude-3-sonnet-20240229",
+                        max_tokens=1000,
+                        system=system_prompt,
+                        messages=[{"role": "user", "content": user_prompt}]
+                    )
+                    code = response.content[0].text.strip()
+                else:  # Assume it's an Ollama model
+                    response = ollama.chat(model=model, messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ])
+                    code = response['message']['content'].strip()
+
+                self.log_model_call(model, user_prompt, code)
+                
+                print(f"Generated code using template '{template_name}':")
+                print(code)
+                break
+                
+            except Exception as e:
+                if self.verbose:
+                    print(f"Error generating code: {e}")
+                if attempt < max_retries - 1:
+                    if self.verbose:
+                        print(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    print(f"Error generating code: {e}")
+                    print(f"Failed to generate code after {max_retries} attempts.")
+
+    
     def strip_markdown_code_block(self, code: str) -> str:
         code = re.sub(r'^```[\w]*\n', '', code)
         code = re.sub(r'\n```$', '', code)
@@ -476,7 +565,7 @@ def load_config(config_file: str) -> Dict[str, Any]:
 
 def main():
     import argparse
-    ver = f"{__import__("gensh").__version__}"
+    ver = f"{__import__('gensh').__version__}"
     parser = argparse.ArgumentParser(description="GenSh - Generate and execute code using natural language")
     parser.add_argument('--config', default='~/.gensh_config.json', help='Path to configuration file')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode')

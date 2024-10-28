@@ -136,3 +136,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 [ ] Feat: Ability to edit files in the whole_format
 [ ] Feat: Generate sensible message for git commit changes
 
+[ ] Add analyze_logs use case to gensh
