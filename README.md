@@ -2,23 +2,8 @@
 GenSh is a command-line tool that allows you to generate and execute code using natural language prompts. It leverages large language models to translate your queries into Python or shell code and then executes the generated code. The intenation of this tool is to assist in software and security research.
 
 
-## Features
-[x] Generate and execute Python or shell code from natural language queries
-[x] Support for multiple LLM backends: OpenAI GPT, Anthropic Claude, and Ollama
-[x] Web search integration to improve code generation
-[x] Interactive shell mode
-[x] Command-line execution mode
-[x] Configurable settings via JSON configuration file
-[x] Verbose mode for detailed output
-[x] Error handling and retry logic for code generation
-[x] Pre-defined templates for common tasks
-[x] Logging of language model calls to SQLite database
-[x] Session-based conversation history
-[x] API token management using .env file
-
 ## Requirements
 GenSh requires the following:
-
 - Python 3.11 or higher
 - OpenAI API key (for GPT-3.5 or GPT-4 access)
 - Anthropic API key (for Claude access)
@@ -123,6 +108,18 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - [Security Prompts](https://learning.oreilly.com/library/view/chatgpt-for-cybersecurity/9781805124047/B21091_03.xhtml)
 
 ## BUGS / FEATURES / TODO
+[x] Generate and execute Python or shell code from natural language queries
+[x] Support for multiple LLM backends: OpenAI GPT, Anthropic Claude, and Ollama
+[x] Web search integration to improve code generation
+[x] Interactive shell mode
+[x] Command-line execution mode
+[x] Configurable settings via JSON configuration file
+[x] Verbose mode for detailed output
+[x] Error handling and retry logic for code generation
+[x] Pre-defined templates for common tasks
+[x] Logging of language model calls to SQLite database
+[x] Session-based conversation history
+[x] API token management using .env file
 [x] Bug: Release base templates with the shell, list_templates is broken. DONE: added resources
 [x] Bug: History functionality doesnt work - DONE: added show_model commands
 [x] Feat: Ability to inject on variables in templates, ask for template input

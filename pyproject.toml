@@ -3,7 +3,7 @@ requires = ["setuptools>=45", "setuptools-scm[toml]>=6.2", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "gensh/_version.py"
+write_to = "src/gensh/_version.py"
 
 [tool.poetry]
 name = "gensh"
@@ -12,13 +12,16 @@ description = "GenSh - Generate and execute code using natural language"
 authors = ["Vaibhav Bhandari <vaibhavb@gmail.com>"]
 license = "MIT"
 readme = "README.md"
+packages = [
+  { include = "gensh", from="src"}
+]
 include = [
   "templates/*",
   "README.md"
 ]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 openai = "^1.0.0"
 PyYAML = "^6.0"
 ollama = "^0.1.0"
