@@ -520,9 +520,16 @@ class GenShell(cmd.Cmd):
             print(f"- {template_name}")
 
     def do_show_template(self, arg):
-        """Show the content of a specific template."""
-        if arg in self.templates:
-            print(yaml.dump(self.templates[arg], default_flow_style=False))
+        """Show the content of a specific template matching the pattern."""
+        pattern = arg.strip()
+        if not pattern:
+            print("Error: must provide a pattern");
+            return
+        matches = [name for name in self.templates if name.startswith(pattern)]
+        if matches:
+            for match in matches:
+                print(f"Template {match}")
+                print(yaml.dump(self.templates[match], default_flow_style=False))
         else:
             print(f"Template '{arg}' not found.")
 
@@ -567,12 +574,16 @@ def main():
     parser = argparse.ArgumentParser(description="GenSh - Generate and execute code using natural language")
     parser.add_argument('--config', default='~/.gensh_config.json', help='Path to configuration file')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode')
+    parser.add_argument('-l', '--list', metavar="PATTERN", type=str, help="Show templates matching the pattern")
     parser.add_argument('--version', action='version', version=f'%(prog)s {ver}')
     args = parser.parse_args()
 
     config = load_config(os.path.expanduser(args.config))
     shell = GenShell(ver, config, verbose=args.verbose)
-    shell.cmdloop()
+    if args.list:
+        shell.do_show_template(args.list)
+    else:
+        shell.cmdloop()
 
 if __name__ == "__main__":
     main()

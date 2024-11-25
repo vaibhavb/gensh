@@ -52,6 +52,12 @@ To run a single command:
 gensh -c '"find your ip address" | exec_python'
 ```
 
+### Prepare Templates for copying
+To read inbuilt templates for processing by genai agents:
+```
+gensh -l book | pbcopy
+```
+
 ### Batch Processing
 To process commands from a file:
 ```
@@ -132,5 +138,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 [ ] Feat: Update docs
 [ ] Feat: Ability to edit files in the whole_format
 [ ] Feat: Generate sensible message for git commit changes
-
 [ ] Add analyze_logs use case to gensh
