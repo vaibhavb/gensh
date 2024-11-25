@@ -1,0 +1,25 @@
+system_prompt: >
+  You are a blog author.
+
+user_prompt: >
+  You are a friendly blog summarizer and notes generator, with humor. Following is the list of all the articles I have read recently, starting after "---", they include date, link and tags in "#format". I want you to do the following:
+
+  1. DONT Come up with title
+  2. Organize the links by tags and then within the tag organize by date (prefarably by week).  Try not to repeat the links.
+  3. Succintly DESCRIBE the link in one or two sentences, next to its entry
+  4. Introduce the post with a humorous summary
+  5. Don't use "|" character in link titles, replace it with "-" 
+  6. Don't include tags in link name
+  7. Make SURE you INCLUDE all the links give to you
+  8. Use level tags, ORGANIZE by tags and not weeks
+  9. Add dates at beginning of the links
+
+  Show just the markdown in RAW format and nothing else.
+
+output:
+  format: markdown
+
+variables:
+  task:
+    description: The specific list of all the blogs links.
+

@@ -1,41 +1,41 @@
 [build-system]
-requires = ["setuptools>=45", "setuptools-scm[toml]>=6.2", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[tool.setuptools_scm]
-write_to = "src/gensh/_version.py"
-
-[tool.poetry]
-name = "gensh"
-version = "0.8.1"
-description = "GenSh - Generate and execute code using natural language"
-authors = ["Vaibhav Bhandari <vaibhavb@gmail.com>"]
-license = "MIT"
-readme = "README.md"
-packages = [
-  { include = "gensh", from="src"}
-]
-include = [
-  "templates/*",
-  "README.md"
-]
-
-[tool.poetry.dependencies]
-python = "^3.12"
-openai = "^1.0.0"
-PyYAML = "^6.0"
-ollama = "^0.1.0"
-python-dotenv = "^0.19.0"
-markdown = "^3.3.0"
-requests = "^2.25.0"
-beautifulsoup4 = "^4.9.3"
-anthropic = "^0.35.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^6.2"
-
-[tool.poetry.scripts]
-gensh = "gensh.processor:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[project]
+name = "gensh"
+version = "0.8.1"
+description = "GenSh - Generate and execute code using natural language"
+readme = "README.md"
+authors = [
+    {name = "Vaibhav Bhandari", email = "vaibhavb@gmail.com"},
+]
+license = {text = "MIT"}
+requires-python = "<4.0,>=3.12"
+dependencies = [
+    "openai<2.0.0,>=1.0.0",
+    "PyYAML<7.0,>=6.0",
+    "ollama<1.0.0,>=0.1.0",
+    "python-dotenv<1.0.0,>=0.19.0",
+    "markdown<4.0.0,>=3.3.0",
+    "requests<3.0.0,>=2.25.0",
+    "beautifulsoup4<5.0.0,>=4.9.3",
+    "anthropic<1.0.0,>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest<7.0,>=6.2",
+]
+prod = [
+
+]
+
+[project.scripts]
+gensh = "gensh.processor:main"
+
+[tool.uv]
+package = true

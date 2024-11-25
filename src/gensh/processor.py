@@ -20,7 +20,6 @@ from bs4 import BeautifulSoup
 import urllib.parse
 import sys
 import io
-import importlib.resources
 
 def load_api_tokens():
     load_dotenv()
@@ -500,11 +499,11 @@ class GenShell(cmd.Cmd):
     def load_templates(self) -> Dict[str, str]:
         template_dir = self.config.get('template_dir', 'templates')
         templates = {}
-        sys_templates_dir = importlib.resources.files('templates')
-            # Iterate through all files in the templates directory
+        sys_templates_dir = Path(__file__).parent / "templates"
+        # Iterate through all files in the templates directory
         for template_file in sys_templates_dir.iterdir():
             if template_file.is_file() and template_file.suffix == '.yml':
-                with importlib.resources.open_text('templates', template_file.name) as file:
+                with open(sys_templates_dir / template_file.name, "r") as file:
                     templates[template_file.stem] = yaml.safe_load(file)
         if os.path.exists(template_dir):
             for filename in os.listdir(template_dir):
