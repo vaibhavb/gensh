@@ -49,7 +49,7 @@ gensh
 ### Command-Line Execution
 To run a single command:
 ```
-gensh -c 'generate_code "find your ip address" | exec_python'
+gensh -c 'python_code "find your ip address" | exec_python'
 ```
 
 ### Prepare Templates for copying
