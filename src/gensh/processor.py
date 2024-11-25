@@ -477,6 +477,29 @@ class GenShell(cmd.Cmd):
             code = input_data
         self.execute_code(code, "shell")
 
+    def completedefault(self, text, line, begidx, endidx):
+        """General completion method for all commands."""
+        # Get all command name
+        commands = [cmd[3:] for cmd in self.get_names() if cmd.startswith("do_")]
+
+        if begidx == 0:
+            # If we're at the start of the line, suggest commands
+            if not text:
+                # No input, return all commands
+                return commands
+            else:
+                # Filter commands based on input
+                return [cmd for cmd in commands if cmd.startswith(text)]
+        else:
+            # If completing arguments for a specific command
+            cmd_name = line.split()[0]
+            if hasattr(self, f"complete_{cmd_name}"):
+                # Use specific complete_<command> if defined
+                return getattr(self, f"complete_{cmd_name}")(text, line, begidx, endidx)
+            else:
+                # Default to no suggestions for arguments
+                return []
+
     def onecmd(self, line):
         """Handle pipes and execute the commands in sequence."""
         # Split commands based on the pipe (|)
@@ -646,6 +669,12 @@ def main():
     if args.command:
         shell.onecmd(args.command)
     else:
+        import readline, rlcompleter
+        # Ensure tab completion works
+        readline.parse_and_bind("tab: complete")
+        # Check if readline is available
+        if "libedit" in readline.__doc__:
+            readline.parse_and_bind("bind ^I rl_complete")
         shell.cmdloop()
 
 if __name__ == "__main__":
