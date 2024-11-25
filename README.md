@@ -49,7 +49,7 @@ gensh
 ### Command-Line Execution
 To run a single command:
 ```
-gensh -c '"find your ip address" | exec_python'
+gensh -c 'generate_code "find your ip address" | exec_python'
 ```
 
 ### Prepare Templates for copying
@@ -58,16 +58,10 @@ To read inbuilt templates for processing by genai agents:
 gensh -l book | pbcopy
 ```
 
-### Batch Processing
+### TODO: Batch Processing
 To process commands from a file:
 ```
 gensh -f example_batch.gensh
-```
-
-### Output Formats
-Specify the output format:
-```
-gensh --output markdown
 ```
 
 ### Verbose Mode

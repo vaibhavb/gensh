@@ -1,4 +1,4 @@
-system_prompt: >
+user_prompt: > 
   Act as an expert architect engineer and provide direction to your editor engineer.
   Study the change request and the current code.
   Describe how to modify the code to complete the request.
@@ -9,8 +9,3 @@ system_prompt: >
   DO NOT show the entire updated function/file/etc!
 
   Always reply in the same language as the change request.
-
-user_prompt: >
-
-output:
-  format: text

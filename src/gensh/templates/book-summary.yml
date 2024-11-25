@@ -1,20 +1,17 @@
-system_prompt: >
+user_prompt: >
   You are book summary generator.
 
-user_prompt: >
-  Your task is to generate a comprehensive summary of the book specified in the following input variable:
-
-  $book_title
+  Your task is to generate a comprehensive summary of the book specified in the following as BOOK:
 
   When creating your summary, make sure to include the following key elements:
-  1. The main intent or purpose of the book
-  2. A list of the major topics covered in the book
-  3. A conclusion that encapsulates the book's central message or takeaway
+    1. The main intent or purpose of the book
+    2. A list of the major topics covered in the book
+    3. A conclusion that encapsulates the book's central message or takeaway
 
   To ensure your summary is effective and engaging, follow these guidelines:
-  - Be concise and avoid using superfluous words
-  - Pack as much relevant information as possible into the summary
-  - Use clear and straightforward language to convey the book's content
+    - Be concise and avoid using superfluous words
+    - Pack as much relevant information as possible into the summary
+    - Use clear and straightforward language to convey the book's content
 
   Please output your entire summary in raw markdown format, using appropriate formatting for headings, lists, and paragraphs.
 
@@ -22,9 +19,4 @@ user_prompt: >
 
   Remember, your goal is to create a comprehensive yet concise summary that accurately represents the book's content and encourages readers to explore the book further.
 
-output:
-  format: markdown
-
-variables:
-  book_title:
-    description: The title of the book.
+  BOOK

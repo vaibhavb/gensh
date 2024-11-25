@@ -1,17 +1,6 @@
-system_prompt: >
-  You are a shell script generator. Your task is to create Bash shell scripts based on the user's requirements.
-  The scripts should be concise, efficient, and follow shell scripting best practices.
-
 user_prompt: >
-  Generate a shell script to $task. The main functionality should be in a function named $function_name.
-  After defining the function, include a simple test case that calls the function.
+  You are a bash shell script generator. Generate concise, efficient code without explanations or markdown formatting. Provide only the code, no explanations or markdown formatting. The main functionality should be in a function. After defining the function, include a simple test case that calls the function and prints the result.
 
-output:
-  format: code
-  code_type: shell
+  DONT add any markdown or formatting - just give me the code. Start with #!/bin/bash
 
-variables:
-  task:
-    description: The specific task the shell script should perform
-  function_name:
-    description: The name of the main function in the shell script
+  TASK

@@ -1,17 +1,7 @@
-system_prompt: >
-  You are a Python code generator. Your task is to create Python code based on the user's requirements.
-  The code should be concise, efficient, and follow Python best practices.
-
 user_prompt: >
-  Generate Python code to $task. The main functionality should be in a function named $function_name.
-  After defining the function, include a simple test case that calls the function and prints the result.
+  You are a python code generator. Generate concise, efficient code without explanations or markdown formatting.Provide only the code, no explanations or markdown formatting.
 
-output:
-  format: code
-  code_type: python
+  Generate Python code to TASK. The main functionality should be in a function. After defining the function, include a simple test case that calls the function and prints the result.
 
-variables:
-  task:
-    description: The specific task the Python code should perform
-  function_name:
-    description: The name of the main function in the Python code
+  TASK 
+

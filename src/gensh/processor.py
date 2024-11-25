@@ -32,6 +32,18 @@ def load_api_tokens():
                 print(f"Warning: {key} not provided. Some functionality may be limited.")
     return tokens
 
+def requires_confirmation(method):
+    """Decorator to mark commands that require user confirmation."""
+    method.requires_confirmation = True
+    return method
+
+def alias(*aliases):
+    """Decorator to define aliases for commands."""
+    def decorator(func):
+        func.aliases = aliases
+        return func
+    return decorator
+
 class GenShell(cmd.Cmd):
     prompt = "gensh> "
     fence = "---"
@@ -86,7 +98,6 @@ class GenShell(cmd.Cmd):
             VALUES (datetime('now'), ?, ?, ?, ?)
         ''', (self.session_id, model, query, response))
         self.db_conn.commit()
-
 
     def do_show_model_response(self, query: str) -> str :
         "Show the last [num] model responses, default is 1, saves to context"
@@ -168,8 +179,7 @@ class GenShell(cmd.Cmd):
         
         return query
 
-    def do_generate_code(self, query: str, execution_type: str = 'python') -> str:
-        "Generate code. If query starts as 'use template architect' then it will use 'architect' template, else default to python code generator."
+    def template_match(query: str):
         template_match = re.match(r'use template (\w+)(.*)', query, re.IGNORECASE)
         if template_match:
             template_name = template_match.group(1)
@@ -188,18 +198,30 @@ class GenShell(cmd.Cmd):
                 return None
         else:
             query = self.replace_context_variables_in_query(query)
-            system_prompt = f"You are a {execution_type} code generator. Generate concise, efficient code without explanations or markdown formatting."
-            user_prompt = f"Generate {execution_type} code to {query}. Provide only the code, no explanations or markdown formatting."
 
+    @alias("code")
+    def do_python_code(self, query) -> str:
+        "Python code generator"
+        self.generate_code(query, 'python')
+    
+    @alias("bash")
+    def do_shell_code(self, query) -> str:
+        "Shell code generator"
+        self.generate_code(query, 'shell')
+
+    def generate_code(self, query: str, execution_type: str = 'python') -> str:
+        "Python code generator."
+        system_prompt = ""
+        code_type = f"code-{execution_type}"
+        prompt = self.get_prompt_template(code_type)['user_prompt']
+        user_prompt = prompt + query;
         model = self.config.get('model', 'gpt-3.5-turbo')
         max_retries = self.config.get('max_retries', 3)
         retry_delay = self.config.get('retry_delay', 1)
-
         for attempt in range(max_retries):
             try:
                 if self.verbose:
                     print(f"Generating code using {model} (attempt {attempt + 1}/{max_retries})...")
-
                 if model.startswith('gpt'):
                     response = self.openai_client.chat.completions.create(
                         model=model,
@@ -223,13 +245,9 @@ class GenShell(cmd.Cmd):
                         {"role": "user", "content": user_prompt}
                     ])
                     code = response['message']['content'].strip()
-
                 self.log_model_call(model, query, code)
-                
-                print(f"Generated {execution_type} code:")
-                print(f"```{execution_type}")
                 print(code)
-                print("```")
+                break
             except Exception as e:
                 if self.verbose:
                     print(f"Error generating code: {e}")
@@ -334,22 +352,24 @@ class GenShell(cmd.Cmd):
         return code.strip()
 
     def confirm_execution(self) -> bool:
+        from sys import stdout, stdin
+        prompt = "Do you want to execute this code? (yes/no): "
         while True:
-            response = input("Do you want to execute this code? (yes/no): ").lower()
-            if response in ['yes', 'y']:
+            stdout.write(prompt)
+            stdout.flush()
+            response = stdin.readline().strip().lower()
+            if response in {'yes', 'y'}:
                 return True
-            elif response in ['no', 'n']:
+            elif response in {'no', 'n'}:
                 return False
-            else:
-                print("Please answer 'yes' or 'no'.")
-
+            stdout.write("Please answer 'yes' or 'no'.\n")
+    
     def execute_code(self, code: str, execution_type: str):
         with tempfile.TemporaryDirectory() as tmpdir:
             if execution_type == "python":
-                output = self.execute_python(tmpdir, code)
+                self.execute_python(tmpdir, code)
             elif execution_type == "shell":
-                output = self.execute_shell(tmpdir, code)
-            return output
+                self.execute_shell(tmpdir, code)
 
     def execute_python(self, tmpdir: str, code: str):
         main_file = os.path.join(tmpdir, "main.py")
@@ -362,11 +382,14 @@ class GenShell(cmd.Cmd):
             if self.verbose:
                 print(f"Executing Python code with timeout of {timeout} seconds...")
             result = subprocess.run([main_file], capture_output=True, text=True, timeout=timeout)
-            return result.stdout + result.stderr
+            print(result.stdout + result.stderr)
+            return
         except subprocess.TimeoutExpired:
-            return f"Execution timed out after {timeout} seconds."
+            print("Execution timed out after {timeout} seconds.")
+            return
         except Exception as e:
-            return f"An error occurred during execution: {e}"
+            print(f"An error occurred during execution: {e}")
+            return
 
     def execute_shell(self, tmpdir: str, code: str):
         script_file = os.path.join(tmpdir, "script.sh")
@@ -398,6 +421,7 @@ class GenShell(cmd.Cmd):
             results.append({"title": title, "snippet": snippet, "link": link})
         print(results)
 
+    @alias("!")
     def do_shell(self, command: str):
         """Execute a shell command."""
         if not command:
@@ -433,6 +457,7 @@ class GenShell(cmd.Cmd):
         ctx = getattr(self, 'context', "No context available.")
         print(ctx)
 
+    @requires_confirmation
     def do_exec_python(self, input_data: str):
         "Execute python code in context or in stdin."
         if os.path.isfile(input_data):
@@ -440,10 +465,9 @@ class GenShell(cmd.Cmd):
                 code = f.read()
         else:
             code = input_data
-        if self.confirm_execution():
-            return self.execute_code(code, "python")
-        print("Code execution cancelled.")
-
+        self.execute_code(code, "python")
+    
+    @requires_confirmation
     def do_exec_shell(self, input_data: str):
         "Execute shell code in context or in stdin"
         if os.path.isfile(input_data):
@@ -451,9 +475,7 @@ class GenShell(cmd.Cmd):
                 code = f.read()
         else:
             code = input_data
-        if self.confirm_execution():
-            return self.execute_code(code, "shell")
-        print("Code execution cancelled.")
+        self.execute_code(code, "shell")
 
     def onecmd(self, line):
         """Handle pipes and execute the commands in sequence."""
@@ -470,13 +492,42 @@ class GenShell(cmd.Cmd):
             if input_data is not None:
                 # Replace standard input with previous command's output
                 cmd_args = cmd_args + input_data
+
+            # Handle '?' explicitly as a help request
+            if cmd_name == "?":
+                self.do_help(cmd_args)
+                continue
+
+            # Check if the command exists
+            method = getattr(self, f"do_{cmd_name}", None)
+            if not method:
+                # If no direct match, check for aliases
+                for attr in dir(self):
+                    potential_method = getattr(self, attr)
+                    if callable(potential_method) and hasattr(potential_method, "aliases"):
+                        if cmd_name in potential_method.aliases:
+                            method = potential_method
+                            break
+            
+            if not method:
+                print(f"Unknown command: {cmd_name}")
+                return False
+            # Check if the command requires confirmation
+            if getattr(method, "requires_confirmation", False):
+                if not self.confirm_execution():
+                    print(f"Command '{cmd_name}' aborted by user.")
+                    return False
+            
             # Redirect standard output to a string buffer to capture output
             output_buffer = io.StringIO()
             old_stdout = sys.stdout
             sys.stdout = output_buffer
             # Execute the command
             try:
-                stop = super().onecmd(f"{cmd_name} {cmd_args}") 
+                stop = method(cmd_args)
+            except Exception as e:
+                print(f"Error executing command {cmd_name}:{e}")
+                return False
             finally:
                 # Restore original stdout
                 sys.stdout = old_stdout
@@ -489,6 +540,7 @@ class GenShell(cmd.Cmd):
         if input_data:
             print(input_data)
         self.history.append((line, input_data))
+        return False
 
     def do_exit(self, arg):
         """Exit the program."""
@@ -518,6 +570,14 @@ class GenShell(cmd.Cmd):
         print("Available templates:")
         for template_name in self.templates:
             print(f"- {template_name}")
+
+    def get_prompt_template(self, arg):
+        pattern = arg.strip()
+        matches = [name for name in self.templates if name.startswith(pattern)]
+        if not matches:
+            raise ValueError(f"No templates found matching pattern: {pattern}")
+        key = matches[0]
+        return self.templates[key]
 
     def do_show_template(self, arg):
         """Show the content of a specific template matching the pattern."""
@@ -584,7 +644,7 @@ def main():
     if args.list:
         shell.do_show_template(args.list)
     if args.command:
-        shell.onecmd(args.list)
+        shell.onecmd(args.command)
     else:
         shell.cmdloop()
 
