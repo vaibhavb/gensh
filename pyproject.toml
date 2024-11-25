@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
@@ -7,7 +7,7 @@ testpaths = ["tests"]
 
 [project]
 name = "gensh"
-version = "0.8.1"
+version = "0.8.2"
 description = "GenSh - Generate and execute code using natural language"
 readme = "README.md"
 authors = [
