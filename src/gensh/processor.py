@@ -571,10 +571,11 @@ def load_config(config_file: str) -> Dict[str, Any]:
 def main():
     import argparse
     ver = f"{__import__('gensh').__version__}"
-    parser = argparse.ArgumentParser(description="GenSh - Generate and execute code using natural language")
+    parser = argparse.ArgumentParser(description="GenSh - Generative AI Toolkit Shell")
     parser.add_argument('--config', default='~/.gensh_config.json', help='Path to configuration file')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode')
     parser.add_argument('-l', '--list', metavar="PATTERN", type=str, help="Show templates matching the pattern")
+    parser.add_argument('-c', '--command', metavar="COMMAND", type=str, help="GenSh Command with pipeline")
     parser.add_argument('--version', action='version', version=f'%(prog)s {ver}')
     args = parser.parse_args()
 
@@ -582,6 +583,8 @@ def main():
     shell = GenShell(ver, config, verbose=args.verbose)
     if args.list:
         shell.do_show_template(args.list)
+    if args.command:
+        shell.onecmd(args.list)
     else:
         shell.cmdloop()
 
