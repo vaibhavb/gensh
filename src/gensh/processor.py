@@ -477,6 +477,7 @@ class GenShell(cmd.Cmd):
             code = input_data
         self.execute_code(code, "shell")
 
+    # DOCS: https://docs.python.org/3/library/cmd.html#cmd.Cmd.completedefault
     def completedefault(self, text, line, begidx, endidx):
         """General completion method for all commands."""
         # Get all command name
