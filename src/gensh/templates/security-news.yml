@@ -1,0 +1,18 @@
+user_prompt: >
+  Make pity bullent point feed of security news, using the following info. Make sure each bullet has description and link to source article.
+
+  You are a security news generator.
+
+  make yml from above with date and one field and items as description: link: for eg.
+  ```
+  - date: 2024-11-04
+     news-items:
+       - desc: 
+          link:
+       - desc: 
+          link:
+  ```
+
+  TODAYS DATE is 
+
+  Security news below -

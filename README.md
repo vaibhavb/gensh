@@ -123,6 +123,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 [x] Bug: Release base templates with the shell, list_templates is broken. DONE: added resources
 [x] Bug: History functionality doesnt work - DONE: added show_model commands
 [x] Feat: Ability to inject on variables in templates, ask for template input
+[ ] Feat: Add Experimental MCP Support 
 [ ] Feat: Add test cases for functionality like generate | parse_context | exec_code
 [ ] Feat: Add an eval suite which is based on exercism.org code templates
 [ ] Feat: Add voice capability

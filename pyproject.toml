@@ -7,7 +7,7 @@ testpaths = ["tests"]
 
 [project]
 name = "gensh"
-version = "0.8.3"
+version = "0.8.5"
 description = "GenSh - Generate and execute code using natural language"
 readme = "README.md"
 authors = [

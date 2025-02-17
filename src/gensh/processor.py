@@ -20,6 +20,45 @@ from bs4 import BeautifulSoup
 import urllib.parse
 import sys
 import io
+import importlib.metadata
+
+def load_pattern_files(pattern_dir: str, pattern_name: str) -> Dict[str, str]:
+    """Load system.md, user.md, and README.md files for a pattern.
+    
+    Args:
+        pattern_dir: Base directory for patterns (e.g. ~/.gensh/fabric/patterns/)
+        pattern_name: Name of the pattern folder (e.g. 'ai')
+        
+    Returns:
+        Dictionary containing 'system', 'user', and 'readme' content
+    """
+    pattern_path = Path(os.path.expanduser(pattern_dir)) / pattern_name
+    
+    if not pattern_path.exists():
+        print(f"Pattern directory '{pattern_name}' not found in {pattern_dir}")
+        return {}
+        
+    files = {
+        'system': pattern_path / 'system.md',
+        'user': pattern_path / 'user.md',
+        'readme': pattern_path / 'README.md'
+    }
+    
+    content = {}
+    
+    for key, file_path in files.items():
+        if file_path.exists():
+            try:
+                with open(file_path, 'r') as f:
+                    content[key] = f.read().strip()
+            except Exception as e:
+                print(f"Error loading {file_path}: {e}")
+        else:
+            if key != 'readme':  # README is optional
+                print(f"Warning: {file_path} not found")
+            content[key] = ""
+            
+    return content
 
 def load_api_tokens():
     load_dotenv()
@@ -53,8 +92,9 @@ class GenShell(cmd.Cmd):
         "execution_timeout": 30,
         "max_retries": 3,
         "retry_delay": 1,
-        "db_path": "gensh_logs.db",
-        "output_format": "text"
+        "db_path": "~/.gensh/gensh_logs.db",
+        "output_format": "text",
+        "patterns_dir": "~/.gensh/fabric/patterns/"
     }
 
     def __init__(self, version: str, config: Dict[str, Any], verbose: bool = False):
@@ -75,11 +115,13 @@ class GenShell(cmd.Cmd):
         self.intro = f"Welcome to GenSh {self.version}. Type help or ? to list commands.\n"
 
     def init_database(self):
-        db_path = self.config.get('db_path', 'gensh_logs.db')
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS model_calls (
+        db_path = self.config.get('db_path')
+        db_path = os.path.expanduser(db_path)
+        try: 
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS model_calls (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT,
                 session_id TEXT,
@@ -87,9 +129,11 @@ class GenShell(cmd.Cmd):
                 query TEXT,
                 response TEXT
             )
-        ''')
-        conn.commit()
-        return conn
+            ''')
+            conn.commit()
+            return conn
+        except sqlite3.Error as e:
+            print(f"Error initializing database: {e}")
 
     def log_model_call(self, model: str, query: str, response: str):
         cursor = self.db_conn.cursor()
@@ -297,6 +341,80 @@ class GenShell(cmd.Cmd):
         retry_delay = self.config.get('retry_delay', 1)
         print(system_prompt, user_prompt)
         self._do_model_call(model, max_retries, retry_delay, system_prompt, user_prompt, template_name)
+
+    def do_list_patterns(self, arg):
+        """List all available patterns in the patterns directory."""
+        patterns_dir = os.path.expanduser(self.config.get('patterns_dir'))
+        pattern_path = Path(patterns_dir)
+        
+        if not pattern_path.exists():
+            print(f"Patterns directory not found: {patterns_dir}")
+            return
+            
+        print("Available patterns:")
+        for item in pattern_path.iterdir():
+            if item.is_dir() and (item / 'system.md').exists():
+                pattern_name = item.name
+                readme_path = item / 'README.md'
+                description = ""
+                if readme_path.exists():
+                    with open(readme_path, 'r') as f:
+                        description = f.readline().strip()  # Get first line of README
+                print(f"- {pattern_name}: {description}")
+
+    def do_show_pattern(self, arg):
+        """Show the content of a specific pattern's files."""
+        if not arg:
+            print("Error: must provide a pattern name")
+            return
+            
+        patterns_dir = os.path.expanduser(self.config.get('patterns_dir'))
+        pattern_content = load_pattern_files(patterns_dir, arg)
+        
+        if pattern_content:
+            if pattern_content.get('readme'):
+                print("README:")
+                print("-" * 40)
+                print(pattern_content['readme'])
+                print()
+                
+            print("System Prompt:")
+            print("-" * 40)
+            print(pattern_content.get('system', 'Not found'))
+            print()
+            
+            print("User Template:")
+            print("-" * 40)
+            print(pattern_content.get('user', 'Not found'))
+        else:
+            print(f"Pattern '{arg}' not found")
+
+    @alias("gen")
+    def do_exec_pattern(self, arg):
+        """Execute a pattern with prompt on an AI model. Usage: exec-pattern pattern_name 'prompt'"""
+        if not arg:
+            print("Usage: exec-pattern pattern_name 'prompt'")
+            return
+
+        parts = arg.split(maxsplit=1)
+        pattern_name = parts[0]
+        prompt = parts[1] if len(parts) > 1 else ""
+        
+        patterns_dir = os.path.expanduser(self.config.get('patterns_dir'))
+        pattern_content = load_pattern_files(patterns_dir, pattern_name)
+
+        if not pattern_content:
+            print(f"Pattern '{pattern_name}' not found")
+            return
+
+        system_prompt = pattern_content.get('system', "")
+        user_prompt = pattern_content.get('user', "") + prompt 
+
+        model = self.config.get('model', 'gpt-3.5-turbo')
+        max_retries = self.config.get('max_retries', 3)
+        retry_delay = self.config.get('retry_delay', 1)
+        self._do_model_call(model, max_retries, retry_delay, system_prompt, user_prompt, pattern_name)
+
 
     def _do_model_call(self, model, max_retries, retry_delay, system_prompt,user_prompt, template_name):
         for attempt in range(max_retries):
@@ -654,12 +772,14 @@ def load_config(config_file: str) -> Dict[str, Any]:
 
 def main():
     import argparse
-    ver = f"{__import__('gensh').__version__}"
+    ver = importlib.metadata.version("gensh") 
     parser = argparse.ArgumentParser(description="GenSh - Generative AI Toolkit Shell")
     parser.add_argument('--config', default='~/.gensh_config.json', help='Path to configuration file')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode')
     parser.add_argument('-l', '--list', metavar="PATTERN", type=str, help="Show templates matching the pattern")
     parser.add_argument('-c', '--command', metavar="COMMAND", type=str, help="GenSh Command with pipeline")
+    parser.add_argument('-p', '--pattern', metavar="PATTERN", type=str, help="Execute AI prompt from pattern files")
+    parser.add_argument('--patterns-dir', default='~/.gensh/fabric/patterns', help='Directory containing pattern files')
     parser.add_argument('--version', action='version', version=f'%(prog)s {ver}')
     args = parser.parse_args()
 
