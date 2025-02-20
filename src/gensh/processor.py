@@ -4,8 +4,6 @@ import os
 import subprocess
 from typing import List, Dict, Any
 import openai
-from anthropic import Anthropic
-import ollama
 import cmd
 import readline
 import tempfile
@@ -24,28 +22,22 @@ import importlib.metadata
 
 def load_pattern_files(pattern_dir: str, pattern_name: str) -> Dict[str, str]:
     """Load system.md, user.md, and README.md files for a pattern.
-    
     Args:
         pattern_dir: Base directory for patterns (e.g. ~/.gensh/fabric/patterns/)
         pattern_name: Name of the pattern folder (e.g. 'ai')
-        
     Returns:
         Dictionary containing 'system', 'user', and 'readme' content
     """
     pattern_path = Path(os.path.expanduser(pattern_dir)) / pattern_name
-    
     if not pattern_path.exists():
         print(f"Pattern directory '{pattern_name}' not found in {pattern_dir}")
         return {}
-        
     files = {
         'system': pattern_path / 'system.md',
         'user': pattern_path / 'user.md',
         'readme': pattern_path / 'README.md'
     }
-    
     content = {}
-    
     for key, file_path in files.items():
         if file_path.exists():
             try:
@@ -57,13 +49,12 @@ def load_pattern_files(pattern_dir: str, pattern_name: str) -> Dict[str, str]:
             if key != 'readme':  # README is optional
                 print(f"Warning: {file_path} not found")
             content[key] = ""
-            
     return content
 
 def load_api_tokens():
     load_dotenv()
     tokens = {}
-    for key in ['OPENAI_API_KEY', 'ANTHROPIC_API_KEY']:
+    for key in ['OPENAI_API_KEY']:
         tokens[key] = os.getenv(key)
         if tokens[key] is None:
             tokens[key] = input(f"Please enter your {key}: ").strip()
@@ -106,7 +97,6 @@ class GenShell(cmd.Cmd):
         self.verbose = verbose
         self.api_tokens = load_api_tokens()
         self.openai_client = openai.OpenAI(api_key=self.api_tokens['OPENAI_API_KEY'])
-        self.anthropic_client = Anthropic(api_key=self.api_tokens['ANTHROPIC_API_KEY'])
         self.context = None
         self.session_id = str(uuid.uuid4())
         self.db_conn = self.init_database()
@@ -117,7 +107,7 @@ class GenShell(cmd.Cmd):
     def init_database(self):
         db_path = self.config.get('db_path')
         db_path = os.path.expanduser(db_path)
-        try: 
+        try:
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             cursor.execute('''
@@ -152,7 +142,7 @@ class GenShell(cmd.Cmd):
         cursor.execute('SELECT response FROM model_calls ORDER BY id DESC LIMIT ?', (num,))
         rows = cursor.fetchall()
         if rows:
-            ctx = "" 
+            ctx = ""
             column_names = [description[0] for description in cursor.description]
             for row in rows:
                 for col_name, value in zip(column_names, row):
@@ -162,7 +152,7 @@ class GenShell(cmd.Cmd):
             self.context = ctx
         else:
             print("No records found.")
- 
+
     def do_show_model_call(self, query: str) -> str:
         "Show the last [num] model calls, default is 1"
         num = 1
@@ -172,7 +162,7 @@ class GenShell(cmd.Cmd):
         cursor.execute('SELECT * FROM model_calls ORDER BY id DESC LIMIT ?', (num,))
         rows = cursor.fetchall()
         if rows:
-            column_names = [description[0] for description in cursor.description]            
+            column_names = [description[0] for description in cursor.description]
             for row in rows:
                 for col_name, value in zip(column_names, row):
                     print(f"{col_name}: {value}")
@@ -778,7 +768,7 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode')
     parser.add_argument('-l', '--list', metavar="PATTERN", type=str, help="Show templates matching the pattern")
     parser.add_argument('-c', '--command', metavar="COMMAND", type=str, help="GenSh Command with pipeline")
-    parser.add_argument('-p', '--pattern', metavar="PATTERN", type=str, help="Execute AI prompt from pattern files")
+    parser.add_argument('-p', '--pattern', metavar=("PATTERN", "PROMPT"), nargs=2, help="Execute AI prompt from pattern files")
     parser.add_argument('--patterns-dir', default='~/.gensh/fabric/patterns', help='Directory containing pattern files')
     parser.add_argument('--version', action='version', version=f'%(prog)s {ver}')
     args = parser.parse_args()
@@ -789,6 +779,8 @@ def main():
         shell.do_show_template(args.list)
     if args.command:
         shell.onecmd(args.command)
+    elif args.pattern:
+        shell.do_exec_pattern(f"{args.pattern[0]} '{args.pattern[1]}'")
     else:
         import readline, rlcompleter
         # Ensure tab completion works

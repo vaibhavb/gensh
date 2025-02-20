@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools>42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [project]
 name = "gensh"
-version = "0.8.5"
+version = "0.8.6"
 description = "GenSh - Generate and execute code using natural language"
 readme = "README.md"
 authors = [
@@ -18,12 +18,10 @@ requires-python = "<4.0,>=3.12"
 dependencies = [
     "openai<2.0.0,>=1.0.0",
     "PyYAML<7.0,>=6.0",
-    "ollama<1.0.0,>=0.1.0",
     "python-dotenv<1.0.0,>=0.19.0",
     "markdown<4.0.0,>=3.3.0",
     "requests<3.0.0,>=2.25.0",
     "beautifulsoup4<5.0.0,>=4.9.3",
-    "anthropic<1.0.0,>=0.35.0",
 ]
 
 [dependency-groups]

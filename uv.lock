@@ -11,24 +11,6 @@ wheels = [
 ]
 
 [[package]]
-name = "anthropic"
-version = "0.39.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "anyio" },
-    { name = "distro" },
-    { name = "httpx" },
-    { name = "jiter" },
-    { name = "pydantic" },
-    { name = "sniffio" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/79/02/2ea51930009d7537c4648f51d1bb3202ec76704cbb39a2a863ab38bee3dd/anthropic-0.39.0.tar.gz", hash = "sha256:94671cc80765f9ce693f76d63a97ee9bef4c2d6063c044e983d21a2e262f63ba", size = 189339 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/94/61/2580eaa171cab20708d59d39cadd15f78a6c617759e8d0a12e18fe3302d1/anthropic-0.39.0-py3-none-any.whl", hash = "sha256:ea17093ae0ce0e1768b0c46501d6086b5bcd74ff39d68cd2d6396374e9de7c09", size = 198392 },
-]
-
-[[package]]
 name = "anyio"
 version = "4.6.2.post1"
 source = { registry = "https://pypi.org/simple" }
@@ -136,13 +118,11 @@ wheels = [
 
 [[package]]
 name = "gensh"
-version = "0.8.4"
+version = "0.8.6"
 source = { editable = "." }
 dependencies = [
-    { name = "anthropic" },
     { name = "beautifulsoup4" },
     { name = "markdown" },
-    { name = "ollama" },
     { name = "openai" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
@@ -156,10 +136,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", specifier = ">=0.35.0,<1.0.0" },
     { name = "beautifulsoup4", specifier = ">=4.9.3,<5.0.0" },
     { name = "markdown", specifier = ">=3.3.0,<4.0.0" },
-    { name = "ollama", specifier = ">=0.1.0,<1.0.0" },
     { name = "openai", specifier = ">=1.0.0,<2.0.0" },
     { name = "python-dotenv", specifier = ">=0.19.0,<1.0.0" },
     { name = "pyyaml", specifier = ">=6.0,<7.0" },
@@ -265,19 +243,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/54/28/3af612670f82f4c056911fbbbb42760255801b3068c48de792d354ff4472/markdown-3.7.tar.gz", hash = "sha256:2ae2471477cfd02dbbf038d5d9bc226d40def84b4fe2986e49b59b6b472bbed2", size = 357086 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3f/08/83871f3c50fc983b88547c196d11cf8c3340e37c32d2e9d6152abe2c61f7/Markdown-3.7-py3-none-any.whl", hash = "sha256:7eb6df5690b81a1d7942992c97fad2938e956e79df20cbc6186e9c3a77b1c803", size = 106349 },
-]
-
-[[package]]
-name = "ollama"
-version = "0.4.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpx" },
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/d7/74/88cd1cce88c8ae5430ef2913ea86e946745cb94a59349c27e074d5d19393/ollama-0.4.1.tar.gz", hash = "sha256:8c6b5e7ff80dd0b8692150b03359f60bac7ca162b088c604069409142a684ad3", size = 12882 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/bd/77240baf373e4e04639d1a78a589dad2565cc80572cb8f1d56c8f6244f39/ollama-0.4.1-py3-none-any.whl", hash = "sha256:b6fb16aa5a3652633e1716acb12cf2f44aa18beb229329e46a0302734822dfad", size = 12901 },
 ]
 
 [[package]]
