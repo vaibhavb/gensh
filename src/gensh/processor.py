@@ -46,7 +46,7 @@ def load_pattern_files(pattern_dir: str, pattern_name: str) -> Dict[str, str]:
             except Exception as e:
                 print(f"Error loading {file_path}: {e}")
         else:
-            if key != 'readme':  # README is optional
+            if (key != 'readme') and (key != 'user'):  # README and USER is optional
                 print(f"Warning: {file_path} not found")
             content[key] = ""
     return content
@@ -83,9 +83,9 @@ class GenShell(cmd.Cmd):
         "execution_timeout": 30,
         "max_retries": 3,
         "retry_delay": 1,
-        "db_path": "~/.gensh/gensh_logs.db",
+        "db_path": "~/.config/gensh/gensh_logs.db",
         "output_format": "text",
-        "patterns_dir": "~/.gensh/fabric/patterns/"
+        "patterns_dir": "~/.config/gensh/fabric/patterns/"
     }
 
     def __init__(self, version: str, config: Dict[str, Any], verbose: bool = False):
@@ -226,7 +226,7 @@ class GenShell(cmd.Cmd):
                     value = input(f"Enter {desc}: ")
                     prompt = prompt.replace(f"{{{var}}}", value)
                 system_prompt = f"You are a {execution_type} code generator. Use the following template to generate code:\n\n{prompt}"
-                user_prompt = f"Generate {execution_type} code based on the template. {template_args}"
+                user_prompt = f"*** Generate {execution_type} based on the template ***. {template_args}"
             else:
                 print(f"Template '{template_name}' not found.")
                 return None
@@ -390,6 +390,12 @@ class GenShell(cmd.Cmd):
         pattern_name = parts[0]
         prompt = parts[1] if len(parts) > 1 else ""
         
+        # Check for piped input
+        if not sys.stdin.isatty():
+            # Read from pipe and add to args
+            piped_input = sys.stdin.read().strip()
+            prompt += piped_input
+
         patterns_dir = os.path.expanduser(self.config.get('patterns_dir'))
         pattern_content = load_pattern_files(patterns_dir, pattern_name)
 
@@ -768,7 +774,7 @@ def main():
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose mode')
     parser.add_argument('-l', '--list', metavar="PATTERN", type=str, help="Show templates matching the pattern")
     parser.add_argument('-c', '--command', metavar="COMMAND", type=str, help="GenSh Command with pipeline")
-    parser.add_argument('-p', '--pattern', metavar=("PATTERN", "PROMPT"), nargs=2, help="Execute AI prompt from pattern files")
+    parser.add_argument('-p', '--pattern', metavar=("PATTERN"), nargs='*', help="Execute AI prompt from pattern files")
     parser.add_argument('--patterns-dir', default='~/.gensh/fabric/patterns', help='Directory containing pattern files')
     parser.add_argument('--version', action='version', version=f'%(prog)s {ver}')
     args = parser.parse_args()
@@ -780,7 +786,8 @@ def main():
     if args.command:
         shell.onecmd(args.command)
     elif args.pattern:
-        shell.do_exec_pattern(f"{args.pattern[0]} '{args.pattern[1]}'")
+        prompt = ' '.join(args.pattern[1:])
+        shell.do_exec_pattern(f"{args.pattern[0]} '{prompt}'")
     else:
         import readline, rlcompleter
         # Ensure tab completion works
